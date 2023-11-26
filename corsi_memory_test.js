@@ -11,17 +11,44 @@ const blockSequence = [];
 let userSequence = [];
 let sequenceLength = 2;
 let attempts = 0;
+// Adjust the values according to your layout
+const blockDiameter = 4; // as vmin (from CSS)
+const containerSize = 80; // as vmin (from CSS)
 
+// Calculate grid dimensions based on vmin
+const cellSize = blockDiameter; // Assuming the cell size to be the block diameter
+const numRows = Math.floor(containerSize / cellSize);
+const numCols = numRows; // Square grid
+
+// Create an array representing the grid
+let grid = new Array(numRows);
+for (let i = 0; i < numRows; i++) {
+    grid[i] = new Array(numCols).fill(false); // false indicates unoccupied
+}
 const gridSize = 32;
 const gridSpacing = 100 / gridSize;
 
 function generateRandomPosition(block) {
-  const randomX = Math.floor(Math.random() * gridSize);
-  const randomY = Math.floor(Math.random() * gridSize);
+  let randomRow, randomCol, isOccupied;
 
-  block.style.left = `${randomX * gridSpacing}%`;
-  block.style.top = `${randomY * gridSpacing}%`;
+  do {
+    randomRow = Math.floor(Math.random() * numRows);
+    randomCol = Math.floor(Math.random() * numCols);
+    isOccupied = grid[randomRow][randomCol];
+  } while (isOccupied);
+
+  grid[randomRow][randomCol] = true; // Mark this cell as occupied
+
+  // Since the blocks-container covers the entire game-container,
+  // we can directly position blocks based on the grid
+  const vminToPixels = value => value * gameContainer.clientWidth / 100;
+  const xPosition = vminToPixels(randomCol * cellSize);
+  const yPosition = vminToPixels(randomRow * cellSize);
+
+  block.style.left = `${xPosition}px`;
+  block.style.top = `${yPosition}px`;
 }
+
 document.addEventListener('click', function() {
   html2canvas(document.body).then(canvas => {
       const imgDataUrl = canvas.toDataURL("image/png");
@@ -137,11 +164,18 @@ function processHighlightedBlocksData(data) {
 
 function generateSequence() {
   blockSequence.length = 0;
+  let availableBlocks = [...blocks]; // Clone the blocks array
+
   for (let i = 0; i < sequenceLength; i++) {
-    const randomBlock = blocks[Math.floor(Math.random() * blocks.length)];
-    blockSequence.push(randomBlock);
+    const randomIndex = Math.floor(Math.random() * availableBlocks.length);
+    const selectedBlock = availableBlocks[randomIndex];
+    blockSequence.push(selectedBlock);
+
+    // Remove the selected block from the available blocks
+    availableBlocks.splice(randomIndex, 1);
   }
 }
+
 
 function hideBlocks() {
   blocks.forEach(block => block.classList.add("hidden"));
